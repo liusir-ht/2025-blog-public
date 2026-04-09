@@ -1,8 +1,8 @@
 {
 	"meta": {
-		"title": "YYsuni",
-		"description": "YYsuni 的个人博客，记录前端开发、探索、笔记。前端 UI 更新代码仓库。",
-		"username": "lc"
+		"title": "liuchong-Blog",
+		"description": "liuchong 的个人博客，记录运维知识和生活碎碎念。",
+		"username": "liuchong"
 	},
 	"theme": {
 		"colorBrand": "#de4331",
@@ -44,21 +44,14 @@
 		{
 			"id": "github",
 			"type": "github",
-			"value": "https://github.com/yysuni",
+			"value": "https://github.com/liusir-ht",
 			"label": "Github",
 			"order": 3
 		},
 		{
-			"id": "juejin",
-			"type": "juejin",
-			"value": "https://juejin.cn/user/2427311675422382",
-			"label": "稀土掘金",
-			"order": 2
-		},
-		{
 			"id": "email",
 			"type": "email",
-			"value": "yysuni1001@gmail.com",
+			"value": "liusir_ht@163.com",
 			"label": "",
 			"order": 1
 		}
