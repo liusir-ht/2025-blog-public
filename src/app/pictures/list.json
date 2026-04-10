@@ -1,1 +1,26 @@
-[]
+[
+	{
+		"id": "1775809690191-bfbb0fcedf24a8",
+		"uploadedAt": "2026-04-10T08:28:10.191Z",
+		"description": "P站精选",
+		"images": [
+			"/images/pictures/1fc67f6ec4f43992.jpg"
+		]
+	},
+	{
+		"id": "1775809702271-76fbef6b298c78",
+		"uploadedAt": "2026-04-10T08:28:22.271Z",
+		"images": [
+			"/images/pictures/758c0913b25fc098.jpg"
+		]
+	},
+	{
+		"id": "1775809716334-8abd2c94f7dcd",
+		"uploadedAt": "2026-04-10T08:28:36.334Z",
+		"images": [
+			"/images/pictures/e43de2a9bb5d8d6a.jpg",
+			"/images/pictures/687d666459b6a9ea.jpg",
+			"/images/pictures/314a79a50480eb73.jpeg"
+		]
+	}
+]
