@@ -1,5 +1,15 @@
 [
   {
+    "slug": "how-to-open-websocket-ingress-nginx",
+    "title": "Ingress-nginx开启Websocket长连接功能",
+    "tags": [],
+    "date": "2026-04-10T10:58",
+    "summary": "ingress-nginx开启Websocket",
+    "cover": "/blogs/how-to-open-websocket-ingress-nginx/46e5963057abdb86.png",
+    "hidden": false,
+    "category": "Kubernetes"
+  },
+  {
     "slug": "first-artist",
     "title": "我的第一篇文章",
     "tags": [],
