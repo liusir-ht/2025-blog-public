@@ -1,5 +1,15 @@
 [
   {
+    "slug": "install-jdk-21-for-centos7.7",
+    "title": "Centos 7.7安装JDK 21版本",
+    "tags": [],
+    "date": "2026-04-14T16:04",
+    "summary": "linux安装JDK21",
+    "cover": "/blogs/install-jdk-21-for-centos7.7/2c8522b2a1b311f5.png",
+    "hidden": false,
+    "category": ""
+  },
+  {
     "slug": "set-jenkins-workday-build",
     "title": "Jenkins配置工作日自动构建",
     "tags": [],
