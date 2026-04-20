@@ -1,5 +1,15 @@
 [
   {
+    "slug": "resolve-cros",
+    "title": "Nginx解决双重跨域问题",
+    "tags": [],
+    "date": "2026-04-20T16:05",
+    "summary": "解决nginx双重跨域问题",
+    "cover": "/blogs/resolve-cros/a31005c5112c0e33.png",
+    "hidden": false,
+    "category": "Linux"
+  },
+  {
     "slug": "install-jdk-21-for-centos7.7",
     "title": "Centos 7.7安装JDK 21版本",
     "tags": [],
