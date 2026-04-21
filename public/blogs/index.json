@@ -1,5 +1,15 @@
 [
   {
+    "slug": "record-git-command",
+    "title": "Git常用命令记录",
+    "tags": [],
+    "date": "2026-04-21T10:27",
+    "summary": "记录常用git命令",
+    "cover": "/blogs/record-git-command/2962c918a3f33dac.jpeg",
+    "hidden": false,
+    "category": "Linux"
+  },
+  {
     "slug": "resolve-cros",
     "title": "Nginx解决双重跨域问题",
     "tags": [],
