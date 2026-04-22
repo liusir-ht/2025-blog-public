@@ -1,5 +1,15 @@
 [
   {
+    "slug": "TencentOS-install-lightRAG",
+    "title": "TencentOS部署lightRAG",
+    "tags": [],
+    "date": "2026-04-22T20:40",
+    "summary": "",
+    "cover": "/blogs/TencentOS-install-lightRAG/53da7da26019d547.jpg",
+    "hidden": false,
+    "category": ""
+  },
+  {
     "slug": "Docker-install-pg",
     "title": "Docker安装PostgreSQL数据库",
     "tags": [],
