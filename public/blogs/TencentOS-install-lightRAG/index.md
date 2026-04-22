@@ -9,7 +9,7 @@
 
 
 ## 核心步骤
-
+### 部署lightRAG
 ```
 git clone https://github.com/HKUDS/LightRAG.git
 cd LightRAG
@@ -33,7 +33,60 @@ make env-base  # 或: cp env.example .env 后手动修改
 # 启动API-WebUI服务
 lightrag-server
 ```
-## 准备测试文本
+### 目录结构
+```
+[root@xxxxx LightRAG]# tree  -a -L 1 .
+.
+├── AGENTS.md
+├── assets
+├── CLAUDE.md
+├── .clinerules
+├── config.ini
+├── config.ini.example
+├── data  #lightRAG的核心存储目录，分为（input、ragStore）
+├── docker-build-push.sh
+├── docker-compose-full.yml
+├── docker-compose.yml
+├── Dockerfile
+├── Dockerfile.lite
+├── .dockerignore
+├── docs
+├── .env  #核心配置，lightRAG读取的核心文件
+├── env.docker-compose-full
+├── env.example
+├── examples
+├── .git
+├── .gitattributes
+├── .github
+├── .gitignore
+├── inputs
+├── k8s-deploy
+├── LICENSE
+├── lightrag
+├── lightrag_hku.egg-info
+├── lightrag.log
+├── lightrag.service.example
+├── lightrag_webui
+├── Makefile
+├── MANIFEST.in
+├── .pre-commit-config.yaml
+├── pyproject.toml
+├── rag_storage
+├── README.assets
+├── README.md
+├── README-zh.md
+├── reproduce
+├── requirements-offline-llm.txt
+├── requirements-offline-storage.txt
+├── requirements-offline.txt
+├── scripts
+├── SECURITY.md
+├── setup.py
+├── tests
+├── uv.lock
+└── .venv
+```
+### 准备测试文本
 ```
 七个小矮人的故事
 
