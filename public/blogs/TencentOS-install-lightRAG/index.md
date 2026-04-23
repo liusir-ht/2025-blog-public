@@ -145,3 +145,43 @@ lightrag-server
 ![](/blogs/TencentOS-install-lightRAG/fb82a2a49e45d02f.png)
 - Web UI
 ![](/blogs/TencentOS-install-lightRAG/013ab5d1d3588172.png)
+
+## 遇到的问题
+- lightRAG上传测试文件时，出现维度不一致问题
+```
+ERROR: Failed to initialize LightRAG: Embedding dim mismatch, expected: 1024, but loaded: 3072
+Traceback (most recent call last):
+  File "/data/LightRAG/.venv/bin/lightrag-server", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/data/LightRAG/lightrag/api/lightrag_server.py", line 1523, in main
+    app = create_app(global_args)
+          ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/LightRAG/lightrag/api/lightrag_server.py", line 1060, in create_app
+    rag = LightRAG(
+          ^^^^^^^^^
+  File "<string>", line 57, in __init__
+  File "/data/LightRAG/lightrag/lightrag.py", line 712, in __post_init__
+    self.entities_vdb: BaseVectorStorage = self.vector_db_storage_cls(  # type: ignore
+                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 9, in __init__
+  File "/data/LightRAG/lightrag/kg/nano_vector_db_impl.py", line 61, in __post_init__
+    self._client = NanoVectorDB(
+                   ^^^^^^^^^^^^^
+  File "<string>", line 6, in __init__
+  File "/data/LightRAG/.venv/lib64/python3.12/site-packages/nano_vectordb/dbs.py", line 73, in __post_init__
+    storage["embedding_dim"] == self.embedding_dim
+AssertionError: Embedding dim mismatch, expected: 1024, but loaded: 3072
+```
+解决方案：
+1. 查看embedding模型支持的维度
+```
+[root@xxxx LightRAG]# curl http://localhost:11434/api/embeddings   -s   -d '{
+    "model": "bge-m3:latest",
+    "prompt": "hello"
+  }' | jq '.embedding | length'
+1024
+```
+2. 修改lightRAG的`.env`里的`EMBEDDING_DIM=1024`,要跟embedding模型保持一致
+3. 删除`rag_storage`目录，并重新创建
+4. 重启服务即可
