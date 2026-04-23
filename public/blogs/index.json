@@ -1,5 +1,14 @@
 [
   {
+    "slug": "Docker-intall-ollama0.21",
+    "title": "Docker部署ollama 0.21",
+    "tags": [],
+    "date": "2026-04-23T12:18",
+    "summary": "",
+    "hidden": false,
+    "category": ""
+  },
+  {
     "slug": "TencentOS-install-lightRAG",
     "title": "TencentOS部署lightRAG",
     "tags": [],
