@@ -6,6 +6,8 @@
 |---|---|---|
 |Tencent OS |3.3|腾讯云提供的Linux操作系统|
 |lightRAG| v1.4.16/0288| 类图RAG向量库，维护知识图谱的对应关系|
+|qwen| 3.5(2b)|阿里开源的大模型|
+|beg-m3| lastest|对中文友好的embedding模型|
 
 
 ## 核心步骤
@@ -185,3 +187,42 @@ AssertionError: Embedding dim mismatch, expected: 1024, but loaded: 3072
 2. 修改lightRAG的`.env`里的`EMBEDDING_DIM=1024`,要跟embedding模型保持一致
 3. 删除`rag_storage`目录，并重新创建
 4. 重启服务即可
+- lightRAG处理文档超时
+```
+ERROR: Failed to extract entities and relationships: C[1/6]: chunk-be79a2c6a466bfaa6a9d620769252fb7:
+ERROR: Traceback (most recent call last):
+  File "/data/LightRAG/.venv/lib64/python3.12/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/data/LightRAG/.venv/lib64/python3.12/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/LightRAG/.venv/lib64/python3.12/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/data/LightRAG/.venv/lib64/python3.12/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/LightRAG/.venv/lib64/python3.12/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/LightRAG/.venv/lib64/python3.12/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/data/LightRAG/.venv/lib64/python3.12/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/LightRAG/.venv/lib64/python3.12/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/LightRAG/.venv/lib64/python3.12/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/LightRAG/.venv/lib64/python3.12/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with map_exceptions(exc_map):
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib64/python3.12/contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "/data/LightRAG/.venv/lib64/python3.12/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+```
+解决方案
+1. 修改`.env`文件，设置MAX_ASYNC=1
