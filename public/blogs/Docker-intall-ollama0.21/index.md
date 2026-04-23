@@ -7,8 +7,8 @@
 |Tencent OS |3.3|腾讯云提供的Linux操作系统（机型为CPU）|
 |Docker |Docker version 26.1.3, build b72abbb| 提供资源隔离、环境隔离的核心组件|
 |ollama| 0.21|快速部署各个厂商的大模型工具|
-|qwen | 3.5（2b）| 阿里开源的大模型|
-|beg | xx|针对RAG检索时需要的大模型|
+|qwen | 2.5（3b）| 阿里开源的大模型|
+|beg | latest|针对RAG检索时需要的大模型|
 
 
 ## 核心步骤
@@ -29,9 +29,9 @@ docker run -itd -v /data/ollama:/root/.ollama -p 11434:11434 --name ollama ollam
 | `ollama/ollama:0.21.1` | 使用的镜像名称和版本标签 |
 
 
-### 使用ollama部署qwen3.5
+### 使用ollama部署qwen2.5
 ```
-docker exec -it ollama bash -c "ollama run qwen3.5:2b"
+docker exec -it ollama bash -c "ollama run qwen2.5:3b"
 
 ```
 #### 参数解释
@@ -42,7 +42,7 @@ docker exec -it ollama bash -c "ollama run qwen3.5:2b"
 | `ollama` | 目标容器名称（与之前创建的容器名称对应） |
 | `bash` | 在容器内启动bash shell |
 | `ollama run` | Ollama命令，用于运行指定的AI模型 |
-| `qwen3.5:2b` | 模型名称和参数规模：<br>- `qwen3.5`：通义千问3.5模型系列<br>- `2b`：20亿参数版本（轻量级模型） |
+| `qwen2.5:3b` | 模型名称和参数规模：<br>- `qwen2.5`：通义千问2.5模型系列<br>- `3b`：30亿参数版本（轻量级模型） |
 
 ### 使用ollama部署beg-m3
 ```
@@ -61,7 +61,7 @@ docker exec -it ollama bash -c "ollama run bge-m3"
 ## 结果验证
 ### ollama运行状况
 ![](/blogs/Docker-intall-ollama0.21/969060f2805bde7d.png)
-### qwen3.5部署状况
-![](/blogs/Docker-intall-ollama0.21/e756d7d069bc0c41.png)
+### qwen2.5部署状况
+![](/blogs/Docker-intall-ollama0.21/5ed415503373fbc7.png)
 ### beg-m3部署状况
 ![](/blogs/Docker-intall-ollama0.21/cf237a55795f4dd1.png)
