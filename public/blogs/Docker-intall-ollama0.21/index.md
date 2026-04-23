@@ -43,8 +43,25 @@ docker exec -it ollama bash -c "ollama run qwen3.5:2b"
 | `bash` | 在容器内启动bash shell |
 | `ollama run` | Ollama命令，用于运行指定的AI模型 |
 | `qwen3.5:2b` | 模型名称和参数规模：<br>- `qwen3.5`：通义千问3.5模型系列<br>- `2b`：20亿参数版本（轻量级模型） |
+
+### 使用ollama部署beg-m3
+```
+docker exec -it ollama bash -c "ollama run bge-m3"
+
+```
+#### 参数解释
+| 参数 | 说明 |
+|------|------|
+| `docker exec` | 在已运行的容器中执行命令 |
+| `-it` | 组合参数：<br>- `-i`：保持标准输入打开<br>- `-t`：分配一个伪终端<br>两者结合实现交互式操作 |
+| `ollama` | 目标容器名称（与之前创建的容器名称对应） |
+| `bash -c` | 通过bash执行字符串中的命令：<br>- `bash`：启动bash shell<br>- `-c`：执行后面引号中的命令字符串 |
+| `"ollama run bge-m3"` | 要执行的命令：<br>- `ollama run`：Ollama运行模型命令<br>- `bge-m3`：BGE-M3模型名称（BAAI/BGE-M3，用于嵌入和重排序的多功能模型） |
+
 ## 结果验证
 ### ollama运行状况
 ![](/blogs/Docker-intall-ollama0.21/969060f2805bde7d.png)
 ### qwen3.5部署状况
 ![](/blogs/Docker-intall-ollama0.21/e756d7d069bc0c41.png)
+### beg-m3部署状况
+![](/blogs/Docker-intall-ollama0.21/cf237a55795f4dd1.png)
