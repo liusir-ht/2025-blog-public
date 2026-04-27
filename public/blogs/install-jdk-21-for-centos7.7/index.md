@@ -8,7 +8,7 @@
 | 组件名称 | 组件版本 | 组建功能 |
 | --- | --- | --- |
 | Centos  | 7.7 | Linux操作系统 |
-| JDK | 21.0.10| JAVA服务的依赖环境和编译环境 |
+| JDK | jdk-21.0.11| JAVA服务的依赖环境和编译环境 |
 
 ## 安装步骤
 
@@ -22,7 +22,7 @@ wget https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.tar.gz
 mkdir -p /usr/lib/jvm
 tar -zxvf jdk-21_linux-x64_bin.tar.gz -C /usr/lib/jvm/
 cd /usr/lib/jvm/
-mv jdk-21.0.10/ java-21
+mv jdk-21.0.11/ java-21
 ```
 
 3. 业务启动脚本添加以下内容（项目隔离）
