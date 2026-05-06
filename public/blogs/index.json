@@ -1,5 +1,15 @@
 [
   {
+    "slug": "copy-fail-leak",
+    "title": "copy-fail漏洞复现",
+    "tags": [],
+    "date": "2026-05-06T15:11",
+    "summary": "copy-fail漏洞复现",
+    "cover": "/blogs/copy-fail-leak/68c847ccb8c7bcfb.png",
+    "hidden": false,
+    "category": "Linux"
+  },
+  {
     "slug": "Centos7.6-install-php",
     "title": "Centos7.6安装php 7.3.33",
     "tags": [],
