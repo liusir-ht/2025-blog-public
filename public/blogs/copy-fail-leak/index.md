@@ -141,6 +141,9 @@ root@xxxx:/home/test-user/copy-fail-CVE-2026-31431# lsmod | grep algif_aead
 algif_aead             16384  0
 af_alg                 32768  1 algif_aead
 
+root@xxxxx:/home/testuser/copy-fail-CVE-2026-31431# dpkg -l kmod | grep '^ii'
+ii  kmod           31+20240202-2ubuntu7 amd64        tools for managing Linux kernel modules
+
 # 检查 AEAD 接口是否可用（结果为 y 或 m 表示受影响）
 zgrep CONFIG_CRYPTO_USER_API_AEAD /proc/config.gz 2>/dev/null
 ```
