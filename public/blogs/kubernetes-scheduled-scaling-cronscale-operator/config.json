@@ -1,0 +1,9 @@
+{
+  "title": "Kubernetes 定时扩缩容实践：CronScale Operator 设计与实现",
+  "tags": [],
+  "date": "2026-05-09T16:06",
+  "summary": "",
+  "cover": "/blogs/kubernetes-scheduled-scaling-cronscale-operator/4765ed0dc4b8795d.jpeg",
+  "hidden": false,
+  "category": "Kubernetes"
+}
