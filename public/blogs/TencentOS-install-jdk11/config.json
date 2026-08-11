@@ -1,0 +1,9 @@
+{
+  "title": "TencentOS Server 3.3 安装 JDK 11.0.18",
+  "tags": [],
+  "date": "2026-08-11T15:36",
+  "summary": "本文介绍如何在 TencentOS Server 3.3 中通过 YUM 安装 OpenJDK 11.0.18，包括查询仓库版本、安装 Java 运行环境和开发工具、使用 alternatives 切换默认 JDK、配置 JAVA_HOME 环境变量以及验证安装结果。需要注意的是，只有软件仓库仍保留 11.0.18 时，才能通过 YUM 精确安装该版本。",
+  "cover": "/blogs/TencentOS-install-jdk11/ed6c054ba49d7449.png",
+  "hidden": false,
+  "category": "Linux"
+}
