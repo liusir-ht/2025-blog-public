@@ -3,7 +3,7 @@
   "tags": [],
   "date": "2026-08-12T19:49",
   "summary": "本文介绍如何基于 Ubuntu 24.04 构建同时包含 JDK 25 和 FFmpeg 8.0 的 Docker 镜像。JDK 25 通过系统软件源安装，FFmpeg 8.0 采用源码编译，并启用 H.264、H.265、VP9、Opus、Vulkan 等常用音视频功能，适用于需要在 Java 服务中调用 FFmpeg、FFprobe 进行音视频处理的场景。",
-  "cover": "/blogs/ubuntu22.04-install-jdk25/ffmpeg8.0/d75a1a82fdfc17f3.jpeg",
+  "cover": "/blogs/ubuntu22.04-install-jdk25-ffmpeg8.0/d75a1a82fdfc17f3.jpeg",
   "hidden": false,
   "category": ""
 }
