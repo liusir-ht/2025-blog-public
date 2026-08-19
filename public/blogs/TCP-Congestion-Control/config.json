@@ -1,0 +1,9 @@
+{
+  "title": "TCP 拥塞控制机制详解",
+  "tags": [],
+  "date": "2026-08-19T12:30",
+  "summary": "本文档整理了 TCP 拥塞控制的核心知识点，包括核心概念、四大算法原理、CUBIC 深度解析、TCP 感知机制以及生产环境排查思路，并通过生活案例帮助理解，适合作为网络调优速查手册。",
+  "cover": "/blogs/TCP-Congestion-Control/00863d5dac96a920.jpg",
+  "hidden": false,
+  "category": "计算机网络"
+}
