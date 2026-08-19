@@ -1,5 +1,15 @@
 [
   {
+    "slug": "nvidia-smi-topo",
+    "title": "nvidia-smi topo -m 拓扑查看与解读",
+    "tags": [],
+    "date": "2026-08-19T09:42",
+    "summary": "",
+    "cover": "/blogs/nvidia-smi-topo/9be6ac542d854569.jpg",
+    "hidden": false,
+    "category": "Linux"
+  },
+  {
     "slug": "nvidia-smi-learning",
     "title": "NVIDIA GPU 管理指南：nvidia-smi 核心参数总结",
     "tags": [],
