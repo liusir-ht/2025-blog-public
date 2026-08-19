@@ -123,7 +123,7 @@ CUBIC 是目前互联网上应用最广泛的算法（Linux、Windows、macOS �
 
 ### 2. 如何查看当前系统的拥塞控制算法？
 
-libash
+```bash
 # 查看当前系统默认算法
 sysctl net.ipv4.tcp_congestion_control
 
