@@ -1,5 +1,15 @@
 [
   {
+    "slug": "nvidia-smi-learning",
+    "title": "NVIDIA GPU 管理指南：nvidia-smi 核心参数总结",
+    "tags": [],
+    "date": "2026-08-19T09:34",
+    "summary": "",
+    "cover": "/blogs/nvidia-smi-learning/b5b1c7ad1d4134e8.jpg",
+    "hidden": false,
+    "category": "Linux"
+  },
+  {
     "slug": "ubuntu22.04-install-jdk25/ffmpeg8.0",
     "title": "Ubuntu 24.04 Docker 镜像安装 JDK 25 和 FFmpeg 8.0",
     "tags": [],
