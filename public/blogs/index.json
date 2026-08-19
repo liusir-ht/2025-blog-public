@@ -7,7 +7,7 @@
     "summary": "",
     "cover": "/blogs/nvidia-smi-learning/b5b1c7ad1d4134e8.jpg",
     "hidden": false,
-    "category": "Linux"
+    "category": "GPU"
   },
   {
     "slug": "ubuntu22.04-install-jdk25/ffmpeg8.0",
@@ -17,7 +17,7 @@
     "summary": "本文介绍如何基于 Ubuntu 24.04 构建同时包含 JDK 25 和 FFmpeg 8.0 的 Docker 镜像。JDK 25 通过系统软件源安装，FFmpeg 8.0 采用源码编译，并启用 H.264、H.265、VP9、Opus、Vulkan 等常用音视频功能，适用于需要在 Java 服务中调用 FFmpeg、FFprobe 进行音视频处理的场景。",
     "cover": "/blogs/ubuntu22.04-install-jdk25/ffmpeg8.0/d75a1a82fdfc17f3.jpeg",
     "hidden": false,
-    "category": ""
+    "category": "Linux"
   },
   {
     "slug": "TencentOS-install-jdk11",
@@ -147,7 +147,7 @@
     "summary": "linux安装JDK21",
     "cover": "/blogs/install-jdk-21-for-centos7.7/2c8522b2a1b311f5.png",
     "hidden": false,
-    "category": ""
+    "category": "Linux"
   },
   {
     "slug": "set-jenkins-workday-build",
