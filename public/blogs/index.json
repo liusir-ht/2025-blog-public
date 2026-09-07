@@ -1,5 +1,15 @@
 [
   {
+    "slug": "k8s-sre",
+    "title": "Kubernetes 核心原理与 SRE 稳定性实践",
+    "tags": [],
+    "date": "2026-09-07T12:27",
+    "summary": "本文从 Kubernetes 的核心运行机制出发，系统梳理 Pod 创建流程、组件职责、PLEG、Informer、Operator、网络、DNS、GPU、镜像管理以及大规模集群优化，并从 SRE 的角度总结集群稳定性建设的方法。",
+    "cover": "/blogs/k8s-sre/e836b9cfe3eb7122.jpeg",
+    "hidden": false,
+    "category": "Interview-article"
+  },
+  {
     "slug": "TCP-Congestion-Control",
     "title": "TCP 拥塞控制机制详解",
     "tags": [],
