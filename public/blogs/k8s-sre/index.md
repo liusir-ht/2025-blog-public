@@ -338,9 +338,12 @@ Kubernetes 参数优化不能脱离集群规模。
 常见参数：
 
 ```text
---max-requests-inflight
---max-mutating-requests-inflight
---request-timeout
+--max-requests-inflight #控制读类 API 并发，默认 400
+--max-mutating-requests-inflight #控制写类 API 并发，默认 200
+--request-timeout #控制普通 API 请求最长处理时间，默认 1 分钟
+
+现代 Kubernetes 默认开启 APF：
+400 + 200 更应该理解为 APF 的总并发额度。
 ```
 
 需要重点关注：
@@ -365,8 +368,8 @@ etcd latency
 常见关注：
 
 ```text
---kube-api-qps
---kube-api-burst
+--kube-api-qps #限制客户端平均请求速率
+--kube-api-burst #限制允许的突发请求数量
 ```
 
 大规模集群还需要关注调度并发能力以及 Scheduler 本身 CPU / Memory 使用情况。
@@ -378,11 +381,11 @@ etcd latency
 常见参数：
 
 ```text
---kube-api-qps
---kube-api-burst
---concurrent-deployment-syncs
---concurrent-replicaset-syncs
---concurrent-service-syncs
+--kube-api-qps #限制客户端平均请求速率
+--kube-api-burst #限制允许的突发请求数量
+--concurrent-deployment-syncs #控制 Deployment的并发 reconcile worker 数
+--concurrent-replicaset-syncs #控制ReplicaSet的并发 reconcile worker 数 
+--concurrent-service-syncs #控制Service Controller的并发 reconcile worker 数 
 ```
 
 并发度提高：
@@ -412,13 +415,13 @@ etcd 压力增加
 
 --max-pods
 
---image-gc-high-threshold
---image-gc-low-threshold
+--image-gc-high-threshold  # 镜像磁盘使用率达到该阈值后触发 ImageGC，开始清理未使用镜像
+--image-gc-low-threshold   # ImageGC 清理目标阈值，清理会持续到镜像磁盘使用率降到该值以下
 
---eviction-hard
---eviction-soft
+--eviction-hard            # Kubelet 硬驱逐阈值，资源达到条件后立即驱逐 Pod，例如 memory.available、nodefs.available、imagefs.available
+--eviction-soft            # Kubelet 软驱逐阈值，资源达到条件并持续超过对应 grace period 后才驱逐 Pod
 
---pod-pids-limit
+--pod-pids-limit           # 限制单个 Pod 可创建的最大进程数（PID 数量），用于防止 fork bomb 或单个 Pod 耗尽节点 PID
 ```
 
 同时应该合理设置：
