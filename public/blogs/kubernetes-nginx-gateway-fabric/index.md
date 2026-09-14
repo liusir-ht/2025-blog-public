@@ -259,7 +259,7 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: public-gateway
-  namespace: viitor-live
+  namespace: app-prod
 spec:
   gatewayClassName: nginx
 
@@ -267,13 +267,13 @@ spec:
   - name: https
     protocol: HTTPS
     port: 443
-    hostname: "*.ilivedata.com"
+    hostname: "*.example.com"
 
     tls:
       mode: Terminate
       certificateRefs:
       - kind: Secret
-        name: ilivedata-tls
+        name: example-com-tls
 
     allowedRoutes:
       namespaces:
@@ -313,14 +313,14 @@ HTTPRoute 负责具体业务路由。
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: t-ilivedata
-  namespace: viitor-live
+  name: app-a-route
+  namespace: app-prod
 spec:
   parentRefs:
   - name: public-gateway
 
   hostnames:
-  - "t.ilivedata.com"
+  - "app-a.example.com"
 
   rules:
   - matches:
@@ -329,7 +329,7 @@ spec:
         value: /
 
     backendRefs:
-    - name: t-service
+    - name: service-a
       port: 8080
 ```
 
@@ -354,8 +354,8 @@ proxy_pass
 例如目前存在：
 
 ```text
-t.ilivedata.com
-s.ilivedata.com
+app-a.example.com
+app-b.example.com
 ```
 
 不需要创建两个 Gateway。
@@ -364,16 +364,16 @@ s.ilivedata.com
 
 ```text
                        public-gateway
-                   *.ilivedata.com:443
+                   *.example.com:443
                            │
               ┌────────────┴────────────┐
               │                         │
               ▼                         ▼
         HTTPRoute                   HTTPRoute
-     t.ilivedata.com             s.ilivedata.com
+     app-a.example.com             app-b.example.com
               │                         │
               ▼                         ▼
-         t-service                  s-service
+         service-a                  service-b
 ```
 
 例如：
@@ -382,18 +382,18 @@ s.ilivedata.com
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: t-ilivedata
-  namespace: viitor-live
+  name: app-a-route
+  namespace: app-prod
 spec:
   parentRefs:
   - name: public-gateway
 
   hostnames:
-  - t.ilivedata.com
+  - app-a.example.com
 
   rules:
   - backendRefs:
-    - name: t-service
+    - name: service-a
       port: 8080
 ```
 
@@ -403,18 +403,18 @@ spec:
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: s-ilivedata
-  namespace: viitor-live
+  name: app-b-route
+  namespace: app-prod
 spec:
   parentRefs:
   - name: public-gateway
 
   hostnames:
-  - s.ilivedata.com
+  - app-b.example.com
 
   rules:
   - backendRefs:
-    - name: s-service
+    - name: service-b
       port: 8080
 ```
 
@@ -425,16 +425,16 @@ spec:
 
 一个 ingress-nginx Controller
     │
-    ├── Ingress t.ilivedata.com
-    └── Ingress s.ilivedata.com
+    ├── Ingress app-a.example.com
+    └── Ingress app-b.example.com
 
 
 现在：
 
 一个 Gateway
     │
-    ├── HTTPRoute t.ilivedata.com
-    └── HTTPRoute s.ilivedata.com
+    ├── HTTPRoute app-a.example.com
+    └── HTTPRoute app-b.example.com
 ```
 
 不建议简单理解为：
@@ -465,7 +465,7 @@ spec:
 Gateway Listener 中：
 
 ```yaml
-hostname: "*.ilivedata.com"
+hostname: "*.example.com"
 ```
 
 表示：
@@ -482,7 +482,7 @@ HTTPRoute：
 
 ```yaml
 hostnames:
-- t.ilivedata.com
+- app-a.example.com
 ```
 
 表示：
@@ -506,28 +506,28 @@ HTTPRoute hostnames
 ```text
 Gateway:
 
-*.ilivedata.com
+*.example.com
 
 
 HTTPRoute A:
 
-t.ilivedata.com
+app-a.example.com
 
 
 HTTPRoute B:
 
-s.ilivedata.com
+app-b.example.com
 ```
 
 则：
 
 ```text
-t.ilivedata.com
+app-a.example.com
     ↓
 HTTPRoute A
 
 
-s.ilivedata.com
+app-b.example.com
     ↓
 HTTPRoute B
 ```
@@ -536,7 +536,7 @@ HTTPRoute B
 
 ```text
 Gateway:
-*.ilivedata.com
+*.example.com
 
 HTTPRoute:
 api.example.com
@@ -585,12 +585,12 @@ spec:
   - name: https
     protocol: HTTPS
     port: 443
-    hostname: "*.ilivedata.com"
+    hostname: "*.example.com"
 
     tls:
       mode: Terminate
       certificateRefs:
-      - name: ilivedata-tls
+      - name: example-com-tls
 
     allowedRoutes:
       namespaces:
@@ -643,7 +643,7 @@ allowedRoutes:
 例如：
 
 ```text
-viitor-live
+app-prod
 ├── Gateway
 ├── HTTPRoute
 └── Service
@@ -669,9 +669,9 @@ allowedRoutes:
 gateway-system
 └── public-gateway
        │
-       ├──────── viitor-live/HTTPRoute
-       ├──────── auth/HTTPRoute
-       └──────── nlp/HTTPRoute
+       ├──────── app-prod/HTTPRoute
+       ├──────── team-a/HTTPRoute
+       └──────── team-b/HTTPRoute
 ```
 
 生产环境如果只允许部分 Namespace 使用，更建议后续使用 Namespace Selector 做限制，而不是无限制 `All`。
@@ -685,7 +685,7 @@ gateway-system
 例如：
 
 ```text
-viitor-live
+app-prod
 │
 ├── Gateway
 ├── HTTPRoute
@@ -693,7 +693,7 @@ viitor-live
 └── Deployment
 ```
 
-如果这个 Gateway 只服务 `viitor-live` 业务，这样设计没有问题。
+如果这个 Gateway 只服务 `app-prod` 业务，这样设计没有问题。
 
 并且可以使用：
 
@@ -717,7 +717,7 @@ allowedRoutes:
              ┌────────────┼────────────┐
              │            │            │
              ▼            ▼            ▼
-        viitor-live      auth          nlp
+        app-prod      auth          team-b
         HTTPRoute      HTTPRoute    HTTPRoute
 ```
 
@@ -727,11 +727,11 @@ allowedRoutes:
 gateway-system
 └── public-gateway
 
-viitor-live
+app-prod
 ├── HTTPRoute
 └── Service
 
-auth
+team-a
 ├── HTTPRoute
 └── Service
 ```
@@ -841,8 +841,8 @@ NGF Controller
    ▼
 一套 ingress-nginx
    │
-   ├── t.ilivedata.com
-   ├── s.ilivedata.com
+   ├── app-a.example.com
+   ├── app-b.example.com
    └── 其他业务域名
 ```
 
@@ -857,19 +857,19 @@ NGF Controller
    ▼
 一组 NGINX Data Plane
    │
-   ├── HTTPRoute t.ilivedata.com
-   ├── HTTPRoute s.ilivedata.com
+   ├── HTTPRoute app-a.example.com
+   ├── HTTPRoute app-b.example.com
    └── HTTPRoute ...
 ```
 
 不要一开始设计成：
 
 ```text
-t.ilivedata.com
+app-a.example.com
     ↓
 Gateway A
 
-s.ilivedata.com
+app-b.example.com
     ↓
 Gateway B
 ```
@@ -898,7 +898,7 @@ Gateway B
 nginx-gateway
     └── NGF Controller
 
-viitor-live
+app-prod
     ├── Gateway
     ├── HTTPRoute
     ├── Service
@@ -916,12 +916,12 @@ gateway-system
     ├── public-gateway
     └── TLS Secret
 
-viitor-live
+app-prod
     ├── HTTPRoute
     ├── Service
     └── Deployment
 
-auth
+team-a
     ├── HTTPRoute
     ├── Service
     └── Deployment
@@ -938,7 +938,7 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: public-gateway
-  namespace: viitor-live
+  namespace: app-prod
 spec:
   gatewayClassName: nginx
 
@@ -946,33 +946,33 @@ spec:
   - name: https
     protocol: HTTPS
     port: 443
-    hostname: "*.ilivedata.com"
+    hostname: "*.example.com"
 
     tls:
       mode: Terminate
       certificateRefs:
       - kind: Secret
-        name: ilivedata-tls
+        name: example-com-tls
 
     allowedRoutes:
       namespaces:
         from: Same
 ```
 
-`t.ilivedata.com`：
+`app-a.example.com`：
 
 ```yaml
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: t-ilivedata
-  namespace: viitor-live
+  name: app-a-route
+  namespace: app-prod
 spec:
   parentRefs:
   - name: public-gateway
 
   hostnames:
-  - t.ilivedata.com
+  - app-a.example.com
 
   rules:
   - matches:
@@ -981,24 +981,24 @@ spec:
         value: /
 
     backendRefs:
-    - name: t-service
+    - name: service-a
       port: 8080
 ```
 
-`s.ilivedata.com`：
+`app-b.example.com`：
 
 ```yaml
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: s-ilivedata
-  namespace: viitor-live
+  name: app-b-route
+  namespace: app-prod
 spec:
   parentRefs:
   - name: public-gateway
 
   hostnames:
-  - s.ilivedata.com
+  - app-b.example.com
 
   rules:
   - matches:
@@ -1007,24 +1007,24 @@ spec:
         value: /
 
     backendRefs:
-    - name: s-service
+    - name: service-b
       port: 8080
 ```
 
 最终：
 
 ```text
-                      *.ilivedata.com
+                      *.example.com
                             │
                          Gateway
                             │
                  ┌──────────┴──────────┐
                  │                     │
-        t.ilivedata.com        s.ilivedata.com
+        app-a.example.com        app-b.example.com
                  │                     │
             HTTPRoute              HTTPRoute
                  │                     │
-            t-service              s-service
+            service-a              service-b
                  │                     │
                 Pod                   Pod
 ```
@@ -1048,7 +1048,7 @@ kubectl get gateway -A
 详细状态：
 
 ```bash
-kubectl describe gateway public-gateway -n viitor-live
+kubectl describe gateway public-gateway -n app-prod
 ```
 
 重点：
@@ -1067,7 +1067,7 @@ kubectl get httproute -A
 详细检查：
 
 ```bash
-kubectl describe httproute t-ilivedata -n viitor-live
+kubectl describe httproute app-a-route -n app-prod
 ```
 
 重点：
