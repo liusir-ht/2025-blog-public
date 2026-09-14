@@ -1,5 +1,15 @@
 [
   {
+    "slug": "kubernetes-node-exporter-production",
+    "title": "Kubernetes 生产级部署 Node Exporter",
+    "tags": [],
+    "date": "2026-09-14T15:32",
+    "summary": "",
+    "cover": "/blogs/kubernetes-node-exporter-production/cac1bc0d6f119009.jpg",
+    "hidden": false,
+    "category": "Kubernetes"
+  },
+  {
     "slug": "k8s-sre",
     "title": "Kubernetes 核心原理与 SRE 稳定性实践",
     "tags": [],
