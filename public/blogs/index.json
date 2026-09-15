@@ -1,5 +1,15 @@
 [
   {
+    "slug": "linux-disk-cleanup-guide",
+    "title": "Linux 服务器磁盘清理与 inode 排查指南",
+    "tags": [],
+    "date": "2026-09-15T11:15",
+    "summary": "",
+    "cover": "/blogs/linux-disk-cleanup-guide/5e053e47569e93f6.jpg",
+    "hidden": false,
+    "category": "Linux"
+  },
+  {
     "slug": "linux-cpu-high-troubleshooting",
     "title": "Linux 服务器 CPU 100% 排查思路指南",
     "tags": [],
