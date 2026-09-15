@@ -1,5 +1,15 @@
 [
   {
+    "slug": "linux-cpu-high-troubleshooting",
+    "title": "Linux 服务器 CPU 100% 排查思路指南",
+    "tags": [],
+    "date": "2026-09-15T11:11",
+    "summary": "",
+    "cover": "/blogs/linux-cpu-high-troubleshooting/6af24f638090fd62.jpeg",
+    "hidden": false,
+    "category": "Linux"
+  },
+  {
     "slug": "mysql-binlog-retention-management",
     "title": "MySQL Binlog 保留策略与安全清理实践",
     "tags": [],
