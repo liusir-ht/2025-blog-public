@@ -13,3 +13,9 @@ git reset --hard  origin/分支名
 ```
 git status
 ```
+
+### git本地回滚到指定的commit
+```
+git log --oneline
+git reset --hard commit-id(要回滚的commit)
+```
