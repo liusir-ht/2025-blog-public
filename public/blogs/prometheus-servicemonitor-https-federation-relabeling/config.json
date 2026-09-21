@@ -1,0 +1,9 @@
+{
+  "title": "Prometheus 监控接入、HTTPS 联邦与标签规范化",
+  "tags": [],
+  "date": "2026-09-21T17:46",
+  "summary": "复用独立 Node Exporter、采集外部主机、配置 HTTPS Federation，并修改 job 和 instance 标签。",
+  "cover": "/blogs/prometheus-servicemonitor-https-federation-relabeling/fea14c95741affa9.png",
+  "hidden": false,
+  "category": "Kubernetes"
+}
