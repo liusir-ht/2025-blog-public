@@ -1,5 +1,15 @@
 [
   {
+    "slug": "kubernetes-kube-prometheus-stack-production",
+    "title": "Kubernetes 生产级部署 kube-prometheus-stack",
+    "tags": [],
+    "date": "2026-09-21T17:43",
+    "summary": "从独立 Prometheus 到 Operator 方案，完成子集群监控部署、组件精简、存储和 ServiceMonitor 接入。",
+    "cover": "/blogs/kubernetes-kube-prometheus-stack-production/5f58465daf91b5ad.png",
+    "hidden": false,
+    "category": "Kubernetes"
+  },
+  {
     "slug": "kubernetes-nginx-gateway-fabric-production-adjustments",
     "title": "Kubernetes NGINX Gateway Fabric 生产环境优化",
     "tags": [],
