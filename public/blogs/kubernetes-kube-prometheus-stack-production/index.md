@@ -85,7 +85,7 @@ helm search repo prometheus-community/kube-prometheus-stack --versions | head -n
 选定兼容版本后设置变量，不自动选最新版本用于生产：
 
 ```bash
-STACK_CHART_VERSION='替换为选定的Chart版本'
+STACK_CHART_VERSION='91.2.3'
 helm show chart prometheus-community/kube-prometheus-stack --version "$STACK_CHART_VERSION"
 helm show values prometheus-community/kube-prometheus-stack --version "$STACK_CHART_VERSION" > stack-default-values.yaml
 kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
