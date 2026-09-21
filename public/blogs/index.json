@@ -1,5 +1,15 @@
 [
   {
+    "slug": "kubernetes-nginx-gateway-fabric-production-adjustments",
+    "title": "Kubernetes NGINX Gateway Fabric 生产环境优化",
+    "tags": [],
+    "date": "2026-09-21T16:59",
+    "summary": "",
+    "cover": "/blogs/kubernetes-nginx-gateway-fabric-production-adjustments/d86cab436c8f41e9.png",
+    "hidden": false,
+    "category": "Kubernetes"
+  },
+  {
     "slug": "linux-disk-cleanup-guide",
     "title": "Linux 服务器磁盘清理与 inode 排查指南",
     "tags": [],
