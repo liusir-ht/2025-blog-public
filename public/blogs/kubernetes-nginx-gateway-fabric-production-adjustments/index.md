@@ -253,13 +253,14 @@ nginxGateway:
 apiVersion: gateway.nginx.org/v1alpha1
 kind: SnippetsFilter
 metadata:
-  name: office-ip-whitelist
+  name: route-ip-allowlist
   namespace: app-prod
 spec:
   snippets:
   - context: http.server.location
     value: |
-      allow xx.0.113.10/32;
+      allow 192.0.2.10/32;
+      allow 198.51.100.0/24;
       deny all;
 ```
 
@@ -294,7 +295,7 @@ context: http.server.location
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: private-api
+  name: restricted-route
   namespace: app-prod
 spec:
   parentRefs:
@@ -302,7 +303,7 @@ spec:
     namespace: gateway-system
 
   hostnames:
-  - private.example.com
+  - restricted.example.com
 
   rules:
   - matches:
@@ -315,10 +316,10 @@ spec:
       extensionRef:
         group: gateway.nginx.org
         kind: SnippetsFilter
-        name: office-ip-whitelist
+        name: route-ip-allowlist
 
     backendRefs:
-    - name: private-service
+    - name: restricted-service
       port: 8080
 ```
 
@@ -327,7 +328,7 @@ spec:
 ```text
 public-gateway
 │
-├── private.example.com
+├── restricted.example.com
 │      └── HTTPRoute
 │           └── SnippetsFilter
 │                ├── allow
@@ -341,8 +342,8 @@ public-gateway
 验证：
 
 ```bash
-kubectl describe snippetsfilter office-ip-whitelist -n app-prod
-kubectl describe httproute private-api -n app-prod
+kubectl describe snippetsfilter route-ip-allowlist -n app-prod
+kubectl describe httproute restricted-route -n app-prod
 ```
 
 重点检查：
@@ -470,63 +471,120 @@ Password
 
 ## 10. NGF Access Log 默认写 stdout
 
-NGF：
+### 修改资源
+
+```text
+NginxProxy
+```
+
+### 修改字段
+
+```text
+spec.logging.accessLog
+```
+
+NGF 原生 Access Log 配置示例：
 
 ```yaml
+apiVersion: gateway.nginx.org/v1alpha2
+kind: NginxProxy
+metadata:
+  name: public-gateway-proxy
+  namespace: gateway-system
 spec:
   logging:
     accessLog:
+      escape: json
+      format: '$status $remote_addr - - [$time_local] "$request" $request_time'
 ```
 
-当前日志目的地固定为：
+这部分控制的是 NGINX Data Plane 的标准 Access Log 格式，默认输出到：
 
 ```text
 /dev/stdout
 ```
 
-不能直接通过 `logging.accessLog` 改成：
+如果 logAgent 必须读取真实日志文件，则不能只改这里，需要组合使用：
 
 ```text
-/data/log/nginx/access.log
+SnippetsPolicy
++
+ConfigMap
++
+NginxProxy
 ```
-
-如果日志 Agent 可以采 Kubernetes 容器日志，优先采 stdout。
-
-但当前场景中 logAgent 必须指定 NGINX 日志文件，因此需要额外输出文件日志。
 
 ---
 
-## 11. logAgent 必须读取文件日志
+## 11. logAgent 文件采集：先看需要改哪些资源
 
-推荐结构：
+这一部分一共涉及 3 个资源。
+
+| 需求 | 修改资源 |
+|---|---|
+| 让 NGINX 写 `/data/log/nginx/access.log` | `SnippetsPolicy` |
+| 提供 `/usr/local/fpnn/logAgent.conf` | `ConfigMap` |
+| 创建 Volume、挂载 nginx、增加 logAgent Sidecar | `NginxProxy` |
+
+整体关系：
 
 ```text
-NGINX Data Plane Pod
+SnippetsPolicy
+    ↓
+NGINX 写文件
+    ↓
+/data/log/nginx/access.log
+    ↓
+NginxProxy 创建 shared emptyDir
+    ↓
+logAgent Sidecar
+    ↓
+ConfigMap 提供 logAgent.conf
+```
+
+最终 Pod：
+
+```text
+nginx-public-gateway Pod
 │
 ├── nginx
 │     └── /data/log/nginx/access.log
 │
 ├── logagent
-│     └── 读取 /data/log/nginx/access.log
+│     ├── /data/service/logAgent
+│     ├── /usr/local/fpnn/logAgent.conf
+│     └── /data/log/nginx/access.log
 │
-└── emptyDir
-      └── /data/log/nginx
-```
-
-优点：
-
-```text
-Gateway 扩容时 logAgent 自动一起扩容
-每个 Pod 只采自己的 NGINX 日志
-不存在多个 Pod 同写一个文件的问题
-不依赖固定 Node
+└── volumes
+      ├── nginx-log          emptyDir
+      └── log-agent-config   ConfigMap
 ```
 
 ---
 
-## 12. SnippetsPolicy 额外输出文件日志
+## 12. 第一步：在 SnippetsPolicy 中增加文件 Access Log
 
-可以额外定义一个文件 access log：
+### 修改资源
+
+```text
+SnippetsPolicy
+```
+
+### 作用对象
+
+```text
+Gateway
+```
+
+### 修改内容
+
+让整个 Gateway 对应的 NGINX Data Plane 额外写：
+
+```text
+/data/log/nginx/access.log
+```
+
+示例：
 
 ```yaml
 apiVersion: gateway.nginx.org/v1alpha1
@@ -547,51 +605,46 @@ spec:
       access_log /data/log/nginx/access.log logagent;
 ```
 
-最终：
+这里需要记住：
 
 ```text
-NGINX
-├── /dev/stdout
-└── /data/log/nginx/access.log
+文件 access_log
+    ↓
+SnippetsPolicy
 ```
 
-即使 stdout 和文件日志格式完全相同，也建议文件日志单独维护自己的 `log_format` 名称，不依赖 NGF 内部生成的名称。
+而不是写在 `NginxProxy.spec.logging.accessLog` 里。
+
+应用：
+
+```bash
+kubectl apply -f snippets-policy.yaml
+```
+
+验证：
+
+```bash
+kubectl get snippetspolicy -n gateway-system
+kubectl describe snippetspolicy gateway-file-access-log -n gateway-system
+```
 
 ---
 
-## 13. NGINX 和 logAgent 共享日志目录
+## 13. 第二步：创建 logAgent ConfigMap
 
-推荐：
-
-```yaml
-spec:
-  kubernetes:
-    deployment:
-      pod:
-        volumes:
-        - name: nginx-log
-          emptyDir: {}
-```
-
-NGINX 和 logAgent 同时挂载：
+### 修改资源
 
 ```text
-/data/log/nginx
+ConfigMap
 ```
 
-需要注意：
+### 目标文件
 
 ```text
-emptyDir 生命周期 = Pod 生命周期
+/usr/local/fpnn/logAgent.conf
 ```
 
-Pod 删除后文件消失，所以 logAgent 应及时把日志发送出去。
-
----
-
-## 14. logAgent ConfigMap
-
-ConfigMap：
+示例：
 
 ```yaml
 apiVersion: v1
@@ -602,45 +655,159 @@ metadata:
 data:
   logAgent.conf: |
     # logAgent 配置
-    # 日志文件：
+    # NGINX 日志文件：
     # /data/log/nginx/access.log
 ```
 
-挂载建议使用 `subPath`：
+应用：
 
-```yaml
-volumeMounts:
-- name: log-agent-config
-  mountPath: /usr/local/fpnn/logAgent.conf
-  subPath: logAgent.conf
+```bash
+kubectl apply -f log-agent-config.yaml
 ```
 
-这样不会覆盖整个：
+检查：
 
-```text
-/usr/local/fpnn
+```bash
+kubectl get configmap log-agent-config \
+  -n gateway-system \
+  -o yaml
 ```
 
-目录。
+这一步只是创建配置文件，真正挂载到 Sidecar 仍然是在 `NginxProxy` 里完成。
 
 ---
 
-## 15. 使用 JSONPatch 增加 logAgent Sidecar
+## 14. 第三步：在 NginxProxy 中创建共享 Volume
 
-对于已经存在的 NGINX Data Plane：
-
-```text
-containers:
-- nginx
-```
-
-需要追加：
+### 修改资源
 
 ```text
-- logagent
+NginxProxy
 ```
 
-建议使用 `JSONPatch`：
+### 修改字段
+
+```text
+spec.kubernetes.deployment.pod.volumes
+```
+
+需要创建两个 Volume：
+
+```text
+nginx-log
+    ↓
+nginx 和 logAgent 共享日志目录
+
+log-agent-config
+    ↓
+挂载 ConfigMap
+```
+
+示例：
+
+```yaml
+apiVersion: gateway.nginx.org/v1alpha2
+kind: NginxProxy
+metadata:
+  name: public-gateway-proxy
+  namespace: gateway-system
+spec:
+  kubernetes:
+    deployment:
+      pod:
+        volumes:
+        - name: nginx-log
+          emptyDir: {}
+
+        - name: log-agent-config
+          configMap:
+            name: log-agent-config
+```
+
+这里只是声明 Volume，还没有挂载到 Container。
+
+---
+
+## 15. 第四步：在 NginxProxy 中给 nginx 挂载日志目录
+
+### 修改资源
+
+```text
+NginxProxy
+```
+
+### 修改对象
+
+```text
+NGF 已生成的 nginx Container
+```
+
+### 推荐方式
+
+```text
+StrategicMerge
+```
+
+### 修改字段
+
+```text
+spec.kubernetes.deployment.patches
+```
+
+示例：
+
+```yaml
+spec:
+  kubernetes:
+    deployment:
+      patches:
+      - type: StrategicMerge
+        value:
+          spec:
+            template:
+              spec:
+                containers:
+                - name: nginx
+                  volumeMounts:
+                  - name: nginx-log
+                    mountPath: /data/log/nginx
+```
+
+效果：
+
+```text
+nginx Container
+    ↓
+/data/log/nginx
+    ↓
+nginx-log emptyDir
+```
+
+---
+
+## 16. 第五步：在 NginxProxy 中增加 logAgent Sidecar
+
+### 修改资源
+
+```text
+NginxProxy
+```
+
+### 修改字段
+
+```text
+spec.kubernetes.deployment.patches
+```
+
+### 推荐方式
+
+```text
+JSONPatch
+```
+
+因为当前是新增 Sidecar，而不是修改 nginx。
+
+示例：
 
 ```yaml
 spec:
@@ -676,33 +843,92 @@ spec:
               subPath: logAgent.conf
 ```
 
-启动效果：
+关键字段：
 
-```bash
-/bin/bash -c "exec /data/service/logAgent /usr/local/fpnn/logAgent.conf"
+```yaml
+path: /spec/template/spec/containers/-
 ```
 
-使用 `exec` 可以让 logAgent 成为容器 PID 1，更利于 SIGTERM 处理。
+表示：
+
+```text
+向 containers 数组末尾追加一个 Container
+```
+
+最终：
+
+```text
+containers
+├── nginx
+└── logagent
+```
 
 ---
 
-## 16. logAgent 不需要 Port 和 Probe
+## 17. logAgent 启动命令应该改哪里
 
-当前 logAgent：
+### 修改资源
 
 ```text
-不提供 HTTP/TCP Service
-不使用 readinessProbe
-不使用 livenessProbe
+NginxProxy
 ```
 
-因此不需要：
+### 修改位置
+
+```text
+JSONPatch 中新增的 logagent Container
+```
+
+实际启动命令：
+
+```bash
+/bin/bash -c "/data/service/logAgent /usr/local/fpnn/logAgent.conf"
+```
+
+Kubernetes 配置：
 
 ```yaml
-ports:
-livenessProbe:
-readinessProbe:
+command:
+- /bin/bash
+- -c
+
+args:
+- exec /data/service/logAgent /usr/local/fpnn/logAgent.conf
 ```
+
+推荐使用：
+
+```text
+exec
+```
+
+让 logAgent 成为容器 PID 1，更利于处理 SIGTERM。
+
+---
+
+## 18. logAgent 不使用端口和探针，应该改哪里
+
+### 修改资源
+
+```text
+NginxProxy
+```
+
+### 修改对象
+
+```text
+JSONPatch 中的 logagent Container
+```
+
+当前 logAgent 不使用：
+
+```text
+ports
+readinessProbe
+livenessProbe
+```
+
+因此直接不要声明这些字段即可。
 
 只保留：
 
@@ -710,43 +936,27 @@ readinessProbe:
 image
 command
 args
-volumeMounts
 securityContext
+volumeMounts
 ```
-
-如果 logAgent 崩溃并直接退出：
-
-```text
-PID 1 exit
-   ↓
-Container Exit
-   ↓
-Kubelet 根据 restartPolicy 重启
-```
-
-如果程序可能出现“进程还存在但内部卡死”，没有 livenessProbe 时 Kubernetes 无法主动判断，需要结合程序特性评估。
 
 ---
 
-## 17. root 用户和 privileged 容器的区别
+## 19. logAgent root / privileged 应该改哪里
 
-曾遇到：
+### 修改资源
 
 ```text
-container has runAsNonRoot and image will run as root
+NginxProxy
 ```
 
-说明 logAgent 镜像默认以 root 运行，但 Pod/容器上下文要求非 root。
+### 修改位置
 
-这和：
-
-```yaml
-privileged: false
+```text
+JSONPatch 中的 logagent.securityContext
 ```
 
-不是一回事。
-
-如果镜像当前必须 root：
+如果 logAgent 镜像默认以 root 运行：
 
 ```yaml
 securityContext:
@@ -755,50 +965,100 @@ securityContext:
   runAsUser: 0
 ```
 
-表示：
-
-```text
-UID = 0
-但容器仍然不是 privileged
-```
-
-两者区别：
+含义：
 
 ```text
 runAsUser: 0
-    =
-容器内部 root 用户
+    ↓
+root 用户运行
 
-privileged: true
-    =
-大幅解除容器隔离和 Capability 限制
+runAsNonRoot: false
+    ↓
+允许 root
+
+privileged: false
+    ↓
+不是特权容器
 ```
 
-对于只读取日志文件、读取 ConfigMap 并发送日志的 Agent，一般不需要：
+需要明确：
 
-```yaml
-privileged: true
+```text
+root Container
+≠
+privileged Container
 ```
 
-后续如果程序支持普通 UID，建议继续收紧为非 root。
+对于只读取日志、读取 ConfigMap、发送日志的 Agent，通常不需要 `privileged: true`。
 
 ---
 
-## 18. 挂载 /etc/localtime 设置 UTC+8
+## 20. NGINX 时区应该改哪里
 
-如果镜像内 `TZ` 不生效，可以将 Node 的：
+### 修改资源
 
 ```text
-/usr/share/zoneinfo/Asia/Shanghai
+NginxProxy
 ```
 
-挂到 NGINX Container：
+### 修改对象
 
 ```text
-/etc/localtime
+已有 nginx Container
+```
+
+### 推荐方式
+
+```text
+StrategicMerge
 ```
 
 例如：
+
+```yaml
+spec:
+  kubernetes:
+    deployment:
+      patches:
+      - type: StrategicMerge
+        value:
+          spec:
+            template:
+              spec:
+                containers:
+                - name: nginx
+                  env:
+                  - name: TZ
+                    value: Asia/Shanghai
+```
+
+检查：
+
+```bash
+kubectl get deploy nginx-public-gateway \
+  -n gateway-system \
+  -o jsonpath='{.spec.template.spec.containers[?(@.name=="nginx")].env}'
+```
+
+如果环境变量存在但时间仍是 UTC，则需要确认镜像内 tzdata / zoneinfo。
+
+---
+
+## 21. NGINX 时区不生效时，应该改哪里
+
+仍然修改：
+
+```text
+NginxProxy
+```
+
+使用：
+
+```text
+StrategicMerge
+```
+
+给 Pod 增加 timezone Volume，并挂到 nginx：
 
 ```yaml
 spec:
@@ -827,186 +1087,227 @@ spec:
 验证：
 
 ```bash
-kubectl exec -n gateway-system   <gateway-pod>   -c nginx   -- date
+kubectl exec -n gateway-system \
+  <gateway-pod> \
+  -c nginx \
+  -- date
 ```
-
-预期时区：
-
-```text
-CST / +0800
-```
-
-NGINX `$time_local` 则会类似：
-
-```text
-21/Sep/2026:16:30:00 +0800
-```
-
-这种方法依赖 Node 上存在：
-
-```text
-/usr/share/zoneinfo/Asia/Shanghai
-```
-
-如果希望完全不依赖宿主机，长期更规范的方式是制作包含 tzdata 的自定义镜像。
 
 ---
 
-## 19. StrategicMerge 和 JSONPatch 如何选择
+## 22. StrategicMerge 和 JSONPatch 怎么选
 
-NGF 的 NginxProxy Patch 支持：
+| 需求 | 修改资源 | Patch 类型 |
+|---|---|---|
+| 修改已有 nginx Container | `NginxProxy` | `StrategicMerge` |
+| 给 nginx 加 env | `NginxProxy` | `StrategicMerge` |
+| 给 nginx 加 volumeMount | `NginxProxy` | `StrategicMerge` |
+| 新增 logAgent Sidecar | `NginxProxy` | `JSONPatch` |
+| 修改 logAgent command/args | `NginxProxy` | 跟随 JSONPatch |
+| 修改 logAgent securityContext | `NginxProxy` | 跟随 JSONPatch |
 
-```text
-StrategicMerge
-Merge
-JSONPatch
-```
-
-### 修改已有 nginx Container
-
-优先：
-
-```text
-StrategicMerge
-```
-
-例如：
-
-```yaml
-containers:
-- name: nginx
-  env:
-  - name: TZ
-    value: Asia/Shanghai
-```
-
-它可以按照 Container `name` 合并。
-
-### 追加 logAgent Sidecar
-
-优先：
+简单记：
 
 ```text
-JSONPatch
-```
-
-例如：
-
-```yaml
-- op: add
-  path: /spec/template/spec/containers/-
-```
-
-表示：
-
-```text
-向 containers 数组末尾新增一个容器
-```
-
-不会修改 NGF 已生成的 nginx 容器。
-
----
-
-## 20. 当前推荐的完整架构
-
-```text
-                     Tencent CLB
-                          │
-                          ▼
-                     Gateway
-                          │
-                          ▼
-                 Gateway Service
-                          │
-                          ▼
-             nginx-public-gateway Pod
-             ┌─────────────────────────┐
-             │                         │
-             │  nginx                  │
-Request ───► │    │                    │
-             │    │ access_log         │
-             │    ▼                    │
-             │ /data/log/nginx/        │
-             │ access.log              │
-             │    │                    │
-             │    ▼                    │
-             │ logagent                │
-             │    │                    │
-             │    ▼                    │
-             │ 日志平台                │
-             │                         │
-             └─────────────────────────┘
-```
-
-职责划分：
-
-```text
-Gateway / HTTPRoute
+修改现有 nginx
     ↓
-流量入口和路由
+StrategicMerge
 
+新增 sidecar
+    ↓
+JSONPatch
+```
+
+---
+
+## 23. 推荐的 NginxProxy 完整示例
+
+下面把 logAgent 相关的 Pod 定制集中在一个资源里。
+
+> 凡是 Pod、Container、Volume、Sidecar 相关修改，都在 `NginxProxy` 中完成。
+
+```yaml
+apiVersion: gateway.nginx.org/v1alpha2
+kind: NginxProxy
+metadata:
+  name: public-gateway-proxy
+  namespace: gateway-system
+spec:
+
+  logging:
+    accessLog:
+      escape: json
+      format: '$status $remote_addr - - [$time_local] "$request" $request_time $body_bytes_sent $hostname "$http_referer" "$http_user_agent" "$http_x_forwarded_for"|Host: $http_host |Appid: $http_x_appid |TimeStamp: $http_x_timestamp |X-RtmId: $http_x_rtmid'
+
+  kubernetes:
+    deployment:
+
+      pod:
+        volumes:
+        - name: nginx-log
+          emptyDir: {}
+
+        - name: log-agent-config
+          configMap:
+            name: log-agent-config
+
+      patches:
+
+      # 修改 NGF 已有 nginx Container
+      - type: StrategicMerge
+        value:
+          spec:
+            template:
+              spec:
+                containers:
+                - name: nginx
+                  volumeMounts:
+                  - name: nginx-log
+                    mountPath: /data/log/nginx
+
+      # 新增 logAgent Sidecar
+      - type: JSONPatch
+        value:
+        - op: add
+          path: /spec/template/spec/containers/-
+          value:
+            name: logagent
+            image: registry.example.com/logagent:latest
+
+            command:
+            - /bin/bash
+            - -c
+
+            args:
+            - exec /data/service/logAgent /usr/local/fpnn/logAgent.conf
+
+            securityContext:
+              privileged: false
+              runAsNonRoot: false
+              runAsUser: 0
+
+            volumeMounts:
+            - name: nginx-log
+              mountPath: /data/log/nginx
+
+            - name: log-agent-config
+              mountPath: /usr/local/fpnn/logAgent.conf
+              subPath: logAgent.conf
+```
+
+这个 `NginxProxy` 负责：
+
+```text
 NginxProxy
-    ↓
-Data Plane Deployment / Service / Logging
+├── stdout Access Log 格式
+├── nginx-log emptyDir
+├── log-agent-config Volume
+├── nginx 日志目录挂载
+└── logAgent Sidecar
+```
 
-SnippetsFilter
-    ↓
-单个 Route 的 NGINX 扩展
+但还有两个资源需要单独维护：
 
+```text
 SnippetsPolicy
     ↓
-Gateway 级 NGINX 扩展
-
-JSONPatch
-    ↓
-追加 logAgent Sidecar
-
-StrategicMerge
-    ↓
-修改已有 NGINX Container
-
-emptyDir
-    ↓
-共享文件日志
+负责文件 access_log
 
 ConfigMap
     ↓
-提供 logAgent.conf
+负责 logAgent.conf 内容
 ```
 
 ---
 
-## 21. 推荐验证命令
+## 24. 推荐最终文件拆分
 
-查看 Gateway：
-
-```bash
-kubectl get gateway -A
+```text
+nginx-gateway/
+├── gateway.yaml
+├── httproute.yaml
+├── nginxproxy.yaml
+├── snippets-policy.yaml
+└── log-agent-config.yaml
 ```
 
-查看 NginxProxy：
+对应关系：
 
-```bash
-kubectl get nginxproxy -A
+```text
+gateway.yaml
+    ↓
+Gateway / Listener / TLS
+
+httproute.yaml
+    ↓
+业务路由
+
+nginxproxy.yaml
+    ↓
+Data Plane Pod / Container / Volume / logAgent Sidecar
+
+snippets-policy.yaml
+    ↓
+NGINX 文件 Access Log
+
+log-agent-config.yaml
+    ↓
+logAgent.conf
 ```
 
-查看 Snippets：
+---
+
+## 25. 一眼看懂：需求应该修改哪个资源
+
+| 调整需求 | 修改资源 | 关键位置 |
+|---|---|---|
+| 修改 NGINX stdout 日志格式 | `NginxProxy` | `spec.logging.accessLog` |
+| 额外写文件 Access Log | `SnippetsPolicy` | `spec.snippets` |
+| 创建共享日志目录 | `NginxProxy` | `spec.kubernetes.deployment.pod.volumes` |
+| 给 nginx 挂日志目录 | `NginxProxy` | `StrategicMerge` |
+| 创建 logAgent 配置文件 | `ConfigMap` | `data.logAgent.conf` |
+| 新增 logAgent Sidecar | `NginxProxy` | `JSONPatch` |
+| 修改 logAgent 启动命令 | `NginxProxy` | JSONPatch 中 `command/args` |
+| 修改 logAgent root/privileged | `NginxProxy` | JSONPatch 中 `securityContext` |
+| 不配置 logAgent port/probe | `NginxProxy` | JSONPatch 中不声明 |
+| 修改 nginx TZ | `NginxProxy` | `StrategicMerge` |
+| 单 HTTPRoute IP 白名单 | `SnippetsFilter` | HTTPRoute `ExtensionRef` |
+| 整个 Gateway NGINX 扩展 | `SnippetsPolicy` | `targetRefs -> Gateway` |
+
+---
+
+## 26. 推荐验证命令
+
+检查 NginxProxy：
 
 ```bash
-kubectl get snippetsfilter -A
-kubectl get snippetspolicy -A
+kubectl get nginxproxy public-gateway-proxy \
+  -n gateway-system \
+  -o yaml
 ```
 
-查看 Data Plane：
+检查 SnippetsPolicy：
 
 ```bash
-kubectl get deploy nginx-public-gateway   -n gateway-system   -o yaml
+kubectl get snippetspolicy gateway-file-access-log \
+  -n gateway-system \
+  -o yaml
 ```
 
-查看容器：
+检查 ConfigMap：
 
 ```bash
-kubectl get deploy nginx-public-gateway   -n gateway-system   -o jsonpath='{.spec.template.spec.containers[*].name}'
+kubectl get configmap log-agent-config \
+  -n gateway-system \
+  -o yaml
+```
+
+检查 Data Plane 容器：
+
+```bash
+kubectl get deploy nginx-public-gateway \
+  -n gateway-system \
+  -o jsonpath='{.spec.template.spec.containers[*].name}'
 ```
 
 预期：
@@ -1015,46 +1316,42 @@ kubectl get deploy nginx-public-gateway   -n gateway-system   -o jsonpath='{.spe
 nginx logagent
 ```
 
-查看 logAgent：
+查看 logAgent 最终配置：
 
 ```bash
-kubectl get deploy nginx-public-gateway   -n gateway-system   -o json | jq '.spec.template.spec.containers[] | select(.name=="logagent")'
+kubectl get deploy nginx-public-gateway \
+  -n gateway-system \
+  -o json \
+| jq '.spec.template.spec.containers[] | select(.name=="logagent")'
 ```
 
-查看 NGINX 文件日志：
+查看文件日志：
 
 ```bash
-kubectl exec -it   -n gateway-system   <gateway-pod>   -c nginx   -- ls -lh /data/log/nginx/
+kubectl exec -it \
+  -n gateway-system \
+  <gateway-pod> \
+  -c nginx \
+  -- tail -f /data/log/nginx/access.log
 ```
 
 查看 logAgent 配置：
 
 ```bash
-kubectl exec -it   -n gateway-system   <gateway-pod>   -c logagent   -- cat /usr/local/fpnn/logAgent.conf
-```
-
-查看时区：
-
-```bash
-kubectl exec -it   -n gateway-system   <gateway-pod>   -c nginx   -- date
+kubectl exec -it \
+  -n gateway-system \
+  <gateway-pod> \
+  -c logagent \
+  -- cat /usr/local/fpnn/logAgent.conf
 ```
 
 ---
 
-## 22. 生产环境注意事项
+## 27. 生产环境注意事项
 
 ### Snippets 权限
 
-Snippets 可以直接注入 NGINX 配置，应限制：
-
-```text
-create
-update
-patch
-delete
-```
-
-相关 RBAC 权限，避免普通业务账号任意修改。
+Snippets 可以直接注入 NGINX 配置，应限制普通业务账号对 `SnippetsFilter`、`SnippetsPolicy` 的写权限。
 
 ### 日志重复
 
@@ -1066,13 +1363,7 @@ stdout access log
 file access log
 ```
 
-同一个请求会出现两份日志，需要关注：
-
-```text
-日志存储量
-采集成本
-重复采集
-```
+同一请求会出现两份日志，需要关注日志量、存储成本和重复采集。
 
 ### Request Body
 
@@ -1082,14 +1373,7 @@ file access log
 $request_body
 ```
 
-应先确认是否包含：
-
-```text
-Token
-Password
-隐私信息
-敏感业务字段
-```
+需要确认是否包含 Token、密码、隐私信息或其他敏感字段。
 
 ### Sidecar 扩容
 
@@ -1101,14 +1385,7 @@ NGINX Pod x N
 logAgent x N
 ```
 
-因此扩容时也需要评估：
-
-```text
-logAgent CPU
-logAgent Memory
-日志出口带宽
-日志平台写入压力
-```
+因此也要评估 logAgent CPU、Memory、日志出口带宽和日志平台写入压力。
 
 ### emptyDir
 
@@ -1118,91 +1395,64 @@ Pod 删除
 emptyDir 删除
 ```
 
-日志 Agent 必须具备及时上传能力。
+logAgent 应及时发送日志，不能把 `emptyDir` 当持久化日志目录。
 
 ---
 
-## 23. 总结
+## 28. 总结
 
-NGINX Gateway Fabric 上线后，很多 ingress-nginx 时代通过：
+NGINX Gateway Fabric 上线后，很多 ingress-nginx 时代通过 ConfigMap、Annotation、直接改 Controller Deployment 完成的事情，会拆分到不同资源。
 
-```text
-ConfigMap
-Annotation
-直接修改 Controller Deployment
-```
-
-完成的配置，会逐渐拆分成：
+最重要的是先判断“我要改什么”：
 
 ```text
-Gateway API
+改入口
     ↓
-标准入口与路由
+Gateway
 
+改路由
+    ↓
+HTTPRoute
+
+改 NGINX Data Plane / Pod / Container
+    ↓
 NginxProxy
-    ↓
-数据面配置
 
-NGF Policy / Filter
-    ↓
-NGINX 扩展
-
-Deployment Patch
-    ↓
-Kubernetes 原生高级定制
-```
-
-当前生产实践可以总结为：
-
-```text
-提高并发
-    ↓
-扩 NGINX Data Plane
-
-复用腾讯云 CLB
-    ↓
-Service Annotation
-
-只限制单个 HTTPRoute
+改单 Route 的 NGINX 行为
     ↓
 SnippetsFilter
 
-Gateway 级统一配置
+改整个 Gateway 的 NGINX 原生配置
     ↓
 SnippetsPolicy
 
-Access Log 格式
+提供 logAgent.conf
     ↓
-NginxProxy logging
-
-logAgent 文件采集
-    ↓
-SnippetsPolicy + emptyDir + Sidecar
-
-追加 Sidecar
-    ↓
-JSONPatch
-
-修改 nginx Container
-    ↓
-StrategicMerge
-
-logAgent 镜像必须 root
-    ↓
-runAsUser: 0
-privileged: false
-
-NGINX 日志 UTC+8
-    ↓
-先检查 TZ
-必要时挂载 /etc/localtime
+ConfigMap
 ```
 
-这样既可以继续保留 NGINX 的日志与排障体系，也能把入口逐步迁移到 Gateway API。
+对于当前 logAgent 场景：
+
+```text
+SnippetsPolicy
+    ↓
+让 NGINX 写文件
+
+ConfigMap
+    ↓
+提供 logAgent.conf
+
+NginxProxy
+    ↓
+创建 Volume
+挂载 nginx
+新增 logAgent Sidecar
+配置 command / securityContext
+```
 
 ---
 
-## 24. 参考资料
+## 29. 参考资料
 
 - NGINX Gateway Fabric  
   https://docs.nginx.com/nginx-gateway-fabric/
