@@ -1141,7 +1141,7 @@ spec:
 
   kubernetes:
     deployment:
-
+      replicas: 2
       pod:
         volumes:
         - name: nginx-log
