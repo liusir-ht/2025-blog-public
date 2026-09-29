@@ -386,6 +386,120 @@ gpu
 
 即可确认采集链路基本正常。
 
+测试GPU指标的 demoPod
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: qgpu-burn-test
+  labels:
+    app: qgpu-burn-test
+spec:
+  restartPolicy: Never
+
+  nodeSelector:
+    node.tke.cloud.tencent.com/accelerator-type: "gpu"
+
+  containers:
+    - name: cuda-test
+      image: nvidia/cuda:12.8.0-devel-ubuntu22.04
+      imagePullPolicy: IfNotPresent
+
+      command:
+        - /bin/bash
+        - -c
+        - |
+          set -e
+
+          echo "===== GPU INFO ====="
+          nvidia-smi
+
+          cat << 'EOF' > /tmp/gpu_burn.cu
+          #include <cuda_runtime.h>
+          #include <stdio.h>
+
+          __global__ void burn(float *data, unsigned long long iterations) {
+              int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+              float value = data[i];
+
+              for (unsigned long long j = 0; j < iterations; j++) {
+                  value = value * 1.000001f + 0.000001f;
+              }
+
+              data[i] = value;
+          }
+
+          int main() {
+              const int blocks = 4096;
+              const int threads = 256;
+
+              const size_t element_count = blocks * threads;
+              const size_t bytes = element_count * sizeof(float);
+
+              float *d_data = NULL;
+
+              cudaError_t err = cudaMalloc(&d_data, bytes);
+
+              if (err != cudaSuccess) {
+                  printf("cudaMalloc failed: %s\n", cudaGetErrorString(err));
+                  return 1;
+              }
+
+              printf("GPU burn started\n");
+              printf("Allocated GPU memory: %.2f MB\n",
+                     bytes / 1024.0 / 1024.0);
+
+              unsigned long long round = 0;
+
+              while (1) {
+                  burn<<<blocks, threads>>>(d_data, 100000);
+
+                  err = cudaDeviceSynchronize();
+
+                  if (err != cudaSuccess) {
+                      printf("CUDA error: %s\n", cudaGetErrorString(err));
+                      return 1;
+                  }
+
+                  round++;
+
+                  if (round % 100 == 0) {
+                      printf("Completed rounds: %llu\n", round);
+                      fflush(stdout);
+                  }
+              }
+
+              cudaFree(d_data);
+              return 0;
+          }
+          EOF
+
+          echo "===== COMPILE CUDA TEST ====="
+
+          nvcc \
+            -O3 \
+            /tmp/gpu_burn.cu \
+            -o /tmp/gpu_burn
+
+          echo "===== START GPU BURN ====="
+
+          exec /tmp/gpu_burn
+
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "256Mi"
+          tke.cloud.tencent.com/qgpu-core: "50"
+          tke.cloud.tencent.com/qgpu-memory: "5"
+
+        limits:
+          cpu: "1"
+          memory: "1Gi"
+          tke.cloud.tencent.com/qgpu-core: "50"
+          tke.cloud.tencent.com/qgpu-memory: "5"
+```
+
 ---
 
 ## 总结
