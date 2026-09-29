@@ -52,19 +52,16 @@ serviceMonitor:
   honorLabels: false
 
   relabelings:
-    # Kubernetes 节点名
     - sourceLabels:
         - __meta_kubernetes_pod_node_name
       targetLabel: node
       action: replace
 
-    # Grafana 使用的 Hostname
     - sourceLabels:
         - __meta_kubernetes_pod_node_name
       targetLabel: Hostname
       action: replace
 
-    # instance 去除 :9400
     - sourceLabels:
         - __address__
       regex: '(.+):[0-9]+'
@@ -72,7 +69,6 @@ serviceMonitor:
       targetLabel: instance
       action: replace
 
-    # 从节点名提取 NodePool
     - sourceLabels:
         - __meta_kubernetes_endpoint_node_name
       targetLabel: nodepool
@@ -115,15 +111,78 @@ securityContext:
 
 ---
 
-## 3. 核心配置说明
+## 3. 安装 DCGM Exporter
+
+添加 NVIDIA Helm 仓库：
+
+```bash
+helm repo add gpu-helm-charts \
+  https://nvidia.github.io/dcgm-exporter/helm-charts
+```
+
+更新 Helm Repository：
+
+```bash
+helm repo update
+```
+
+查看可用版本：
+
+```bash
+helm search repo gpu-helm-charts/dcgm-exporter
+```
+
+查看 Chart 信息：
+
+```bash
+helm show chart gpu-helm-charts/dcgm-exporter
+```
+
+安装或升级：
+
+```bash
+  helm upgrade --install dcgm-exporter \
+  gpu-helm-charts/dcgm-exporter \
+  --namespace monitoring \
+  --create-namespace \
+  --version 4.8.4 \
+  -f  values.yaml \
+  --wait \
+  --timeout 10m
+```
+
+如果 Namespace 不存在：
+
+```bash
+kubectl create namespace monitoring
+```
+
+安装完成后检查：
+
+```bash
+helm -n monitoring list
+```
+
+```bash
+kubectl -n monitoring get ds,pod,svc
+```
+
+---
+
+## 4. 核心配置说明
 
 ### 镜像版本
 
-没有手动指定 `image.tag`，默认跟随 Helm Chart 的 `AppVersion`。
+没有手动指定：
 
-这样可以减少 `dcgm-exporter` 和 DCGM 版本不匹配的问题。
+```yaml
+image:
+  tag:
+```
 
----
+默认跟随 Helm Chart 的 `AppVersion`。
+
+这样可以减少 `dcgm-exporter` 与 DCGM 版本不匹配的问题。
 
 ### 只部署到 GPU 节点
 
@@ -132,17 +191,15 @@ nodeSelector:
   node.tke.cloud.tencent.com/accelerator-type: "gpu"
 ```
 
-避免 dcgm-exporter 部署到普通 CPU 节点。
+避免 dcgm-exporter 调度到普通 CPU 节点。
 
-dcgm-exporter 本身只是监控 GPU，因此不要配置：
+dcgm-exporter 本身只负责监控 GPU，不需要配置：
 
 ```yaml
 nvidia.com/gpu: 1
 ```
 
 否则会实际占用 Kubernetes GPU Resource。
-
----
 
 ### ServiceMonitor
 
@@ -153,17 +210,17 @@ serviceMonitor:
 
 通过 Prometheus Operator 自动发现 dcgm-exporter。
 
-如果 ServiceMonitor 已创建，但 Prometheus 中没有 Target，优先检查：
+如果 ServiceMonitor 已经创建，但是 Prometheus Targets 中没有 dcgm-exporter，优先检查：
 
 ```text
-Prometheus serviceMonitorSelector
+serviceMonitorSelector
 ```
 
-是否能匹配 dcgm-exporter 的 ServiceMonitor Label。
+是否可以匹配对应的 ServiceMonitor。
 
 ---
 
-## 4. 标签处理
+## 5. 标签处理
 
 为了方便 Grafana 查询，额外增加：
 
@@ -174,26 +231,26 @@ instance
 nodepool
 ```
 
-例如 Kubernetes 节点：
+例如 Node Name：
 
 ```text
 rcs-eu-gpu-fix.np-mdao5huq.1
 ```
 
-经过：
+通过：
 
 ```yaml
 regex: '.*(np-[a-z0-9]+).*'
 replacement: '$1'
 ```
 
-最终得到：
+提取后：
 
 ```text
 nodepool="np-mdao5huq"
 ```
 
-这样 Grafana 就可以直接按照 NodePool 过滤 GPU：
+Grafana 可以直接按照 NodePool 和 Hostname 过滤：
 
 ```promql
 DCGM_FI_DEV_GPU_UTIL{
@@ -204,7 +261,7 @@ DCGM_FI_DEV_GPU_UTIL{
 
 ---
 
-## 5. PromQL
+## 6. 核心 PromQL
 
 ### GPU 核心利用率
 
@@ -259,9 +316,9 @@ DCGM_FI_DEV_POWER_USAGE{
 
 ---
 
-## 6. 生产环境注意点
+## 7. 生产注意点
 
-### 不建议开启所有 Pod Label
+### 控制指标基数
 
 当前：
 
@@ -272,9 +329,7 @@ kubernetes:
 
 建议保持关闭。
 
-如果把大量 Kubernetes Pod Label 注入 GPU Metrics，容易造成 Prometheus 指标基数快速增加。
-
----
+如果将大量 Kubernetes Pod Label 加入 GPU Metrics，容易增加 Prometheus Time Series 数量。
 
 ### SYS_ADMIN
 
@@ -284,19 +339,17 @@ capabilities:
     - SYS_ADMIN
 ```
 
-主要用于 DCGM Profiling 类指标。
-
-如果后续明确不使用：
+主要用于部分 DCGM Profiling 指标，例如：
 
 ```text
 DCGM_FI_PROF_*
 ```
 
-可以再评估是否移除。
+如果明确不需要 Profiling 指标，可以进一步评估是否移除。
 
 ---
 
-## 7. 验证
+## 8. 验证
 
 检查 DaemonSet：
 
@@ -316,13 +369,13 @@ kubectl -n monitoring get pod -o wide
 kubectl -n monitoring get servicemonitor
 ```
 
-Prometheus 中检查：
+Prometheus 中查询：
 
 ```promql
 DCGM_FI_DEV_GPU_UTIL
 ```
 
-如果能够查询到 GPU 数据，并且存在：
+确认指标中存在：
 
 ```text
 Hostname
@@ -331,22 +384,22 @@ nodepool
 gpu
 ```
 
-这些 Label，说明采集链路正常。
+即可确认采集链路基本正常。
 
 ---
 
 ## 总结
 
-这套配置核心解决四个问题：
+这套配置主要解决：
 
 ```text
 GPU 节点自动部署 dcgm-exporter
-
+          ↓
 ServiceMonitor 自动接入 Prometheus
-
+          ↓
 统一 Hostname / instance / nodepool 标签
-
-控制指标 Cardinality，避免 Prometheus 压力过大
+          ↓
+Grafana 根据 NodePool / Node / GPU 展示
 ```
 
 最终形成：
@@ -357,3 +410,8 @@ GPU → DCGM Exporter → Prometheus → Grafana
 
 的 Kubernetes GPU 监控体系。
 
+## Slug
+
+```text
+kubernetes-dcgm-exporter-production
+```
