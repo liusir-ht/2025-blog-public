@@ -410,8 +410,3 @@ GPU → DCGM Exporter → Prometheus → Grafana
 
 的 Kubernetes GPU 监控体系。
 
-## Slug
-
-```text
-kubernetes-dcgm-exporter-production
-```
