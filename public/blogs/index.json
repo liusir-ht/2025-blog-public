@@ -1,5 +1,15 @@
 [
   {
+    "slug": "kubernetes-headlamp-production-deployment",
+    "title": "Kubernetes 生产环境部署 Headlamp 集群管理界面",
+    "tags": [],
+    "date": "2026-10-08T11:11",
+    "summary": "",
+    "cover": "/blogs/kubernetes-headlamp-production-deployment/fcdf8b0c54bb68cf.png",
+    "hidden": false,
+    "category": "Kubernetes"
+  },
+  {
     "slug": "kubernetes-dcgm-exporter-production",
     "title": "Kubernetes 生产环境部署 NVIDIA DCGM Exporter GPU 监控",
     "tags": [],
