@@ -305,7 +305,7 @@ rule {
 `keep` 在发现阶段丢弃其余 Pod，不会进入文件匹配和读取，资源开销最小。正则默认进行全字符串匹配，不会误匹配 `dev-xxx`。如果 namespace 带前缀，可改为：
 
 ```text
-huajing-dev|huajing-test|huajing-pre
+dev|test|pre
 ```
 
 ### 4.2 标签设计
