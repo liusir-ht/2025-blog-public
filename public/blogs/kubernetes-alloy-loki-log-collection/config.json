@@ -1,0 +1,9 @@
+{
+  "title": "Kubernetes 中使用 Grafana Alloy 采集日志到 Loki",
+  "tags": [],
+  "date": "2026-10-21T09:32",
+  "summary": "",
+  "cover": "/blogs/kubernetes-alloy-loki-log-collection/f10789ae30941c56.png",
+  "hidden": false,
+  "category": "Kubernetes"
+}
