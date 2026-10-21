@@ -198,11 +198,11 @@ data:
     // 6. 写入 Loki
     loki.write "default" {
       endpoint {
-        url       = "http://loki-pre.huajing.tech:3100/loki/api/v1/push"
-        tenant_id = "huajing"
+        url       = "http://xxxx:3100/loki/api/v1/push"
+        tenant_id = "xxxxx"
       }
       external_labels = {
-        cluster = "k8s-cluster-bj-pre",
+        cluster = "xxxx",
       }
     }
 ```
